@@ -23,7 +23,7 @@ familiar. If not, it is not difficult to learn! If you are new to RPC you may ev
 Methods
 
 
-![Alt text](/tomcls/crypto-ws-grpc-node/blob/main/assets/images/crypto-ws-grpc.png?raw=true "A picture is sometimes better than a long speech")
+![Alt text](https://github.com/tomcls/crypto-ws-grpc-node/raw/main/assets/images/crypto-ws-grpc.png "A picture is sometimes better than a long speech")
 
 
 # Installation

@@ -33,6 +33,7 @@ npm install
 
 # App details
 
+***
 .
 ├── LICENSE
 ├── package.json
@@ -68,6 +69,8 @@ npm install
         ├── Dockerfile
         ├── run.sh
         └── start.sh
+
+---
 
 # Run the project
 0. rename .env.example to .env

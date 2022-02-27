@@ -1,0 +1,31 @@
+{
+  "name": "kraken-ws",
+  "version": "1.0.1",
+  "description": "Lightweight API wrapper for the Kraken [websocket API](https://www.kraken.com/features/websocket-api).",
+  "author": "Mike van Rossum",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/askmike/kraken-ws.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start-server": "node src/server.js",
+    "start-receiver": "node src/client-receiver.js",
+    "start-sender": "node src/client-sender.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "ws": "^7.2.1",
+    "async": "3.2.3"
+  },
+  "devDependencies": {
+    "@grpc/proto-loader": "0.6.9",
+    "google-protobuf": "3.19.4",
+    "@grpc/grpc-js": "1.5.7",
+    "webpack": "5.69.1",
+    "webpack-cli": "4.9.2"
+  }
+}

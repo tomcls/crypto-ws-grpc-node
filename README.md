@@ -21,3 +21,83 @@ order book.
 GRPC ( https://grpc.io/ ) is relatively modern Remote Procedure Call protocol. If you have used anything like GraphQL or Thrift, it should be fairly
 familiar. If not, it is not difficult to learn! If you are new to RPC you may even find you prefer gRPC’s structured and typed protocol over HTTP
 Methods
+
+
+![Alt text](relative/path/to/img.jpg?raw=true "A picture is sometimes better than a long speech")
+
+
+# Installation
+sudo n 14 
+cd crypto-ws-grpc-node
+npm install
+
+# App details
+
+.
+├── LICENSE
+├── package.json
+├── protocol_buffers # Not used for the app, just to for testing purpose and understanding
+│   ├── definitions
+│   │   └── orderbook.proto
+│   ├── messages
+│   │   ├── orderbook.js
+│   │   └── orderbook_pb.js
+│   └── test.js
+├── protos
+│   └── orderbook.proto
+├── README.md
+├── src
+│   ├── binanceOrderBook.js # Format the data from Binance
+│   ├── binancews.js # Class that consumes the orderbook from Binance via WebSocket 
+│   ├── client-receiver.js # Job that retrieves data from grpc server and display the best spread between binance & kraken
+│   ├── client-sender.js # Job that retrieves data from Kraken & Binance and sends it to the grpc server
+│   ├── krakenOrderBook.js # Format the data from Kraken
+│   ├── krakenws.js # Class that consumes the orderbook from Kraken via WebSocket 
+│   ├── orderBook.js # Class that has common methods for the related excahnges orderbook that inherit from it
+│   └── server.js # Launch a grpc server
+└── srv # run the project with docker
+    ├── receiver
+    │   ├── Dockerfile
+    │   ├── run.sh
+    │   └── start.sh
+    ├── sender
+    │   ├── Dockerfile
+    │   ├── run.sh
+    │   └── start.sh
+    └── server
+        ├── Dockerfile
+        ├── run.sh
+        └── start.sh
+
+# Run the project
+0. rename .env.example to .env
+
+cd crypto-ws-grpc-node && mv .env.example .env
+
+1. First, run the server
+
+cd crypto-ws-grpc-node && npm run start-server
+
+2. Next, start the receiver on another shell
+
+cd crypto-ws-grpc-node && npm run start-receiver 
+
+3. Finally, start the sender on another shell
+
+cd crypto-ws-grpc-node && npm run start-sender 
+
+# Run with Docker
+
+1. First, run the server
+
+cd crypto-ws-grpc-node && ./srv/server/run.sh
+
+2. Next, start the receiver
+
+cd crypto-ws-grpc-node && ./srv/receiver/run.sh
+
+3. Finally, start the sender
+
+cd crypto-ws-grpc-node && ./srv/sender/run.sh
+
+To see the result please use 'run docker logs'

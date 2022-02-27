@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+message OrderBook {
+	string symbol = 1;
+	message Item {
+		float price = 1;
+		int64 volume = 2;
+	}
+	message Exchange {
+		repeated Item bids = 1;
+		repeated Item asks = 2;
+	} 
+	Exchange a = 2;
+	Exchange b = 3;
+}

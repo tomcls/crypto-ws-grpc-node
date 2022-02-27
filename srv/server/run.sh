@@ -8,4 +8,4 @@ export environment=$1
 dockerName=crypto-ws-server
 docker rm -f ${dockerName}
 docker build --file="srv/server/Dockerfile"  --build-arg environment=${environment}  -t crypto/grpc-server .
-docker run -it --name ${dockerName} crypto/grpc-server  
+docker run -itd --name ${dockerName} --restart always crypto/grpc-server  

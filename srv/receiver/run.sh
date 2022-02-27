@@ -8,6 +8,7 @@ export environment=$1
 dockerName=crypto-grpc-receiver
 docker rm -f ${dockerName}
 docker build --file="srv/receiver/Dockerfile"  --build-arg environment=${environment}  -t crypto/grpc-receiver  .
-docker run -it --name ${dockerName} \
+docker run -itd --name ${dockerName} \
 --link crypto-ws-server \
+--restart always \
 crypto/grpc-receiver 

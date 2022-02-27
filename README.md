@@ -74,33 +74,33 @@ npm install
 
 # Run the project
 0. rename .env.example to .env
-
+```
 cd crypto-ws-grpc-node && mv .env.example .env
-
+```
 1. First, run the server
-
+```
 cd crypto-ws-grpc-node && npm run start-server
-
+```
 2. Next, start the receiver on another shell
-
+```
 cd crypto-ws-grpc-node && npm run start-receiver 
-
+```
 3. Finally, start the sender on another shell
-
+```
 cd crypto-ws-grpc-node && npm run start-sender 
-
+```
 # Run with Docker
 
 1. First, run the server
-
+```
 cd crypto-ws-grpc-node && ./srv/server/run.sh
-
+```
 2. Next, start the receiver
-
+```
 cd crypto-ws-grpc-node && ./srv/receiver/run.sh
-
+```
 3. Finally, start the sender
-
+```
 cd crypto-ws-grpc-node && ./srv/sender/run.sh
-
+```
 To see the result please use 'run docker logs'

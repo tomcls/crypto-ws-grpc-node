@@ -9,5 +9,4 @@ COPY ./protos /var/www/protos
 COPY ./srv/receiver/start.sh /var/www/start.sh
 WORKDIR /var/www
 RUN npm install
-CMD [ "npm run start-receiver" ] 
 ENTRYPOINT ./start.sh

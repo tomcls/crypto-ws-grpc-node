@@ -9,5 +9,4 @@ COPY ./protos /var/www/protos
 COPY ./srv/server/start.sh /var/www/start.sh
 WORKDIR /var/www
 RUN npm install
-CMD [ "npm run start-server" ] 
 ENTRYPOINT ./start.sh

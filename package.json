@@ -1,20 +1,16 @@
 {
-  "name": "kraken-ws",
-  "version": "1.0.1",
-  "description": "Lightweight API wrapper for the Kraken [websocket API](https://www.kraken.com/features/websocket-api).",
-  "author": "Mike van Rossum",
+  "name": "crypto-ws-grpc-node",
+  "version": "1.0.0",
+  "description": "",
+  "author": "tom",
   "license": "MIT",
   "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/askmike/kraken-ws.git"
-  },
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start-server": "node src/server.js",
     "start-receiver": "node src/client-receiver.js",
-    "start-sender": "node src/client-sender.js"
+    "start-sender": "node src/client-sender.js",
+    "generate-certificate": "./srv/generate_certificate.sh"
   },
   "dependencies": {
     "dotenv": "^16.0.0",

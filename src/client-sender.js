@@ -1,20 +1,24 @@
-
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-var grpc = require('@grpc/grpc-js');
-var protoLoader = require('@grpc/proto-loader');
-
 import 'dotenv/config';
+import grpc  from '@grpc/grpc-js';
+import protoLoader from '@grpc/proto-loader';
+import fs from 'fs';
 
-import KrakenWS from './krakenws.js';
-import BinanceWS from './binancews.js';
+import KrakenWS from './service/krakenws.js';
+import BinanceWS from './service/binancews.js';
+
+const host = process.env.host ? process.env.host: 'localhost';
+const with_ssl = process.env.with_ssl && process.env.with_ssl != 0 && process.env.with_ssl != 'no' && process.env.with_ssl != 'false' ? true: false;
+const REMOTE_SERVER = (host === '0.0.0.0' ? 'localhost' : host )+ ":"+process.env.GRPC_SERVER_PORT;
+
+console.log('REMOTE_SERVER',REMOTE_SERVER)
 
 let client;
+let gRPCCall;
 
 const orderbook = {
   'symbol': 'ALGOBTC',
-  'a' : {bids:[],asks:[]} ,
-  'b' : {bids:[],asks:[]} 
+  'kraken': {bids:[],asks:[]} ,
+  'binance': {bids:[],asks:[]} 
 };
 
 var PROTO_PATH =  './protos/orderbook.proto';
@@ -28,98 +32,112 @@ var packageDefinition = protoLoader.loadSync(
   });
 
 var proto = grpc.loadPackageDefinition(packageDefinition).crypto;
-const REMOTE_SERVER = process.env.GRPC_SERVER_URI+":"+process.env.GRPC_SERVER_PORT;
 
-const conBinance = new BinanceWS(process.env.BINANCE_WS_ENDPOINT,process.env.BINANCE_PAIR);
-const conKraken = new KrakenWS(process.env.KRAKEN_WS_ENDPOINT,process.env.KRAKEN_PAIR);
+console.log("host",host, REMOTE_SERVER)
+
+const  handleMessage = (data) => {
+
+  if(!gRPCCall) return;
+
+  const exchangeBook = {
+    symbol: data.symbol,
+    exchange: data.exchange,
+    bids: [],
+    asks: []
+  }
+
+  const keysBids = Object.keys(data.bids);
+  const bids = [];
+  keysBids.forEach((key, index) => {
+      bids.push({'price':parseFloat(key),'volume':parseFloat(data.bids[key])})
+  });
+
+  const keysAsks = Object.keys(data.asks);
+  const asks = [];
+  keysAsks.forEach((key, index) => {
+      asks.push({'price':parseFloat(key),'volume':parseFloat(data.asks[key])})
+  });
+
+  exchangeBook.bids = bids;
+  exchangeBook.asks = asks;
+
+  orderbook[exchangeBook.exchange].bids = exchangeBook.bids;
+  orderbook[exchangeBook.exchange].asks = exchangeBook.asks;
+
+  try {
+    gRPCCall.write(exchangeBook);
+  } catch(e) {
+    console.log(new Date, '[CLIENT_SENDER] ========> ERROR FROM GRPC SERVER', e);
+  }
+  
+  if(orderbook.binance.bids.length > 0  && orderbook.kraken.bids.length > 0 ) {
+    orderbook.binance.bids = [];
+    orderbook.binance.asks = [];
+    orderbook.kraken.bids = [];
+    orderbook.kraken.asks = [];
+    orderbook.symbol = null;
+    gRPCCall.end();
+    streamOrderBook();
+  }
+}
+const  streamOrderBook = () => {
+  gRPCCall = client.recordOrderBook(function(error, stats) {
+    if (error) {
+      console.log(new Date, '[CLIENT_SENDER] ========> ERROR GRPC ', error);
+      return;
+    }
+    console.log(new Date, '[CLIENT_SENDER] END_STREAM STATUS=', stats.status);
+  });
+}
+
+const conBinance = new BinanceWS (
+    process.env.BINANCE_WS_ENDPOINT,
+    process.env.BINANCE_PAIR,
+    10,
+    'depth',
+    handleMessage
+  );
+const conKraken = new KrakenWS(
+    process.env.KRAKEN_WS_ENDPOINT,
+    process.env.KRAKEN_PAIR,
+    handleMessage
+  );
 
 const main = async() => {
+
+  let  credentials;
+  if (with_ssl) {
+    credentials = grpc.credentials.createSsl(
+      fs.readFileSync('./srv/cert/ca.crt'), 
+      fs.readFileSync('./srv/cert/client.key'), 
+      fs.readFileSync('./srv/cert/client.crt')
+    );
+  }
+
   // Create gRPC client
   client = new proto.Book(
     REMOTE_SERVER,
-    grpc.credentials.createInsecure()
+    with_ssl ? credentials:  grpc.credentials.createInsecure()
   );
-  let channelJoin = client.join();
-  //When server send a message
-  channelJoin.on("data", (orderbook) => {
-    if(orderbook && orderbook.exchange === '') {
-      console.log('RPC client joined');
-    } else {
-      //console.log('orderbook',orderbook);
-    }
-  });
-  console.log(new Date, 'Connecting to Binance and Kraken websockets...');
+
+  console.log(new Date, '[CLIENT_SENDER] Connecting to Binance and Kraken websockets... GRPC client connexion is ', with_ssl ? 'secure': 'unsecure');
+
   await conKraken.connect();
   await conBinance.connect();
-  console.log(new Date, 'Websocket connected',process.env.KRAKEN_ORDERBOOK_DEPTH);
-  const channelKrakenId = await conKraken.subscribe(process.env.KRAKEN_PAIR, process.env.KRAKEN_METHOD, {depth: parseInt(process.env.KRAKEN_ORDERBOOK_DEPTH,10)});
-  const channelBinanceId = await conBinance.subscribe(process.env.BINANCE_PAIR, 'SUBSCRIBE', 1, [process.env.BINANCE_PAIR+"@"+process.env.BINANCE_METHOD+process.env.KRAKEN_ORDERBOOK_DEPTH+"@100ms"]);
 
-  console.log(new Date, 'subscribed channelId=',channelKrakenId);
-  conKraken.on('channel:' + channelKrakenId, (data) => {
-    const keysABids = Object.keys(data.bids);
-    const bidsA = [];
-    keysABids.forEach((key, index) => {
-        bidsA.push({'price':key,'volume':data.bids[key]})
-    });
-    const keysAAsks = Object.keys(data.asks);
-    const asksA = [];
-    keysAAsks.forEach((key, index) => {
-      asksA.push({'price':key,'volume':data.asks[key]})
-    });
-    orderbook.a.bids = bidsA;
-    orderbook.a.asks = asksA;
-  });
-  conBinance.on('channel:' + process.env.BINANCE_PAIR+"@"+process.env.BINANCE_METHOD+process.env.KRAKEN_ORDERBOOK_DEPTH+"@100ms", (data) => {
-    // FORMAT BINANCE
-    const keysBBids = Object.keys(data.bids);
-    const bidsB = [];
-    keysBBids.forEach((key, index) => {
-        bidsB.push({'price':key,'volume':data.bids[key]})
-    });
-    const keysBAsks = Object.keys(data.asks);
-    const asksB = [];
-    keysBAsks.forEach((key, index) => {
-      asksB.push({'price':key,'volume':data.asks[key]})
-    });
-    orderbook.b.bids = bidsB;
-    orderbook.b.asks = asksB;
-  });
+  console.log(new Date, '[CLIENT_SENDER] BINANCE AND KRAKEN WS CONNECTED ');
 
-  // Inpect orderbook and send it to grpc server
-  setInterval(() => {
-    if(orderbook.b.bids.length &&
-       orderbook.a.bids.length &&
-        orderbook.b.asks.length &&
-         orderbook.a.asks.length) {
-           try {
-            client.send(orderbook, (e) => {
-              console.log( "[ERROR_CLIENT_SENDER] =>", e);
-              process.exit(5);
-            });
-           } catch (error) {
-             console.log( "[ERROR_CLIENT_SENDER] ==>", error);
-             process.exit(5); // restart the client via docker run ... --restart always
-           }
-    }
-  }, 300);
-   
-  // As this script is unstable due to the increase of the memory: the memory increase of 1Mo every ~4 minutes with grpc lib
-  // grpc lib: from 6.5 mo to 24 mo and crashes with memory exhausted error
-  // @grpc/grpc-js : start from 7 to 70mo (memory increases much faster)
-  // and i don't know why and what is increasing the memory size (related to grpc because 
-  // it works without interruption when we comment client.send() instruction )
-  // lsof -i tcp:50051 -n -P: the number of open conections seems to be stable
-  // node --expose_gc 
-  // from https://github.com/grpc/grpc-node/issues/686
+  await conBinance.subscribe(process.env.BINANCE_PAIR, 'SUBSCRIBE', 1, [process.env.BINANCE_PAIR+"@"+process.env.BINANCE_METHOD+process.env.KRAKEN_ORDERBOOK_DEPTH+"@100ms"]);
+  await conKraken.subscribe(process.env.KRAKEN_PAIR, process.env.KRAKEN_METHOD, {depth: parseInt(process.env.KRAKEN_ORDERBOOK_DEPTH,10)});
+  
+  streamOrderBook();
+ 
   setInterval(function() {
+
     const used = process.memoryUsage().heapUsed / 1024 / 1024;
-    console.log(`Memory usage: ${Math.round(used * 100) / 100} MB`,
-     "a.asks.length", orderbook.a.asks.length,
-     "b.bids.length", orderbook.b.bids.length,
-     "a.asks.length", orderbook.a.asks.length,
-     "b.bids.length", orderbook.b.bids.length);
-  },2000);
+    console.log(new Date, `[CLIENT_SENDER] MEMORY_USAGE = ${Math.round(used * 100) / 100} MB`);
+
+  }, 5000);
 }
 
 main();

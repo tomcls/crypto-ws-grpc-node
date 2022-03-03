@@ -1,16 +1,18 @@
 import WebSocket from 'ws';
-import KrakenOrderBook from './krakenOrderBook.js';
-import EventEmitter   from 'events';
+import KrakenOrderBook from '../model/krakenOrderBook.js';
 
-class KrakenWS extends EventEmitter {
+class KrakenWS  {
 
-  constructor(url = 'wss://ws.kraken.com', pair='ALGO/XBT') {
-    super();
-
+  constructor (
+      url = 'wss://ws.kraken.com', 
+      pair='ALGO/XBT', 
+      callback
+    ) {
     this.url = url;
     this.pairs = {};
     this.connected = false;
     this.orderBook = new KrakenOrderBook(pair);
+    this.callback = callback;
   }
 
   disconnect() {
@@ -47,14 +49,13 @@ class KrakenWS extends EventEmitter {
   }
 
   handleMessage = e => {
-    this.lastMessageAt = +new Date;
     const payload = JSON.parse(e.data);
-  //  console.log(payload)
+    
     if(Array.isArray(payload)) {
       this.orderBook.processOrderBook(payload);
       if(payload && payload[1] && payload[1].b) {
       }
-      this.emit('channel:' + payload[0], this.orderBook.getOrderbook());
+      this.callback(this.orderBook.getOrderbook());
     } else {
 
       if(payload.event === 'subscriptionStatus' && payload.status === 'subscribed') {
@@ -68,8 +69,6 @@ class KrakenWS extends EventEmitter {
 
         return;
       }
-
-      this.emit('message', payload);
     }
   }
 
@@ -100,10 +99,10 @@ class KrakenWS extends EventEmitter {
   _subscribe(pair, subscription, options = {}) {
     this.ws.send(JSON.stringify(
       {
-        "event": "subscribe",
-        "pair": [ pair ],
-        "subscription": {
-          "name": subscription,
+        'event': 'subscribe',
+        'pair': [ pair ],
+        'subscription': {
+          'name': subscription,
           ...options
         }
       }

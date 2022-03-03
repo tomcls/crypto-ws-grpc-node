@@ -2,21 +2,32 @@ syntax = "proto3"; //Specify proto3 version.
 
 package crypto; //Optional: unique package name.
 
-
 service Book {
-    rpc join(stream OrderBook) returns (stream OrderBook){}
-    rpc send(OrderBook) returns (OrderBook){}
+    rpc receive( Symbol) returns (stream OrderBook){}
+	rpc recordOrderBook(stream ExchangeBook) returns (OrderBookStatus) {}
+}
+message Symbol {
+  string name = 1;
+}
+message Item {
+	float price = 1;
+	float volume = 2;
+}
+message ExchangeBook {
+	string exchange = 1;
+	string symbol = 2;
+	repeated Item bids = 3;
+	repeated Item asks = 4;
 }
 message OrderBook {
 	string symbol = 1;
-	message Item {
-		float price = 1;
-		int64 volume = 2;
-	}
 	message Exchange {
 		repeated Item bids = 1;
 		repeated Item asks = 2;
 	} 
-	Exchange a = 2;
-	Exchange b = 3;
+	Exchange kraken = 2;
+	Exchange binance = 3;
+}
+message OrderBookStatus {
+  string status = 1;
 }

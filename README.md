@@ -107,3 +107,26 @@ cd crypto-ws-grpc-node && ./srv/receiver/run.sh
 cd crypto-ws-grpc-node && ./srv/sender/run.sh
 ```
 To see the result please use 'run docker logs'
+
+
+## References
+
+### GRPC Node js
+
+https://grpc.io/docs/languages/node/basics/
+
+### Kraken 
+
+https://docs.kraken.com/websockets/
+
+https://support.kraken.com/hc/en-us/articles/360027677512-Example-order-book-code-Python-
+
+### Binance
+
+https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md
+
+This stream is currently used in the app
+https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#partial-book-depth-streams
+
+But you can use this one with a bit more logic (better way i think)
+https://github.com/binance/binance-spot-api-docs/blob/master/web-socket-streams.md#how-to-manage-a-local-order-book-correctly

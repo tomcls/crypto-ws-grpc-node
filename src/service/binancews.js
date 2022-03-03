@@ -1,12 +1,15 @@
 import WebSocket from 'ws';
-import EventEmitter   from 'events';
-import BinanceOrderBook from './binanceOrderBook.js';
+import BinanceOrderBook from '../model/binanceOrderBook.js';
 
-class BinanceWS extends EventEmitter {
+class BinanceWS {
 
-  constructor(url = 'wss://stream.binance.com:9443/ws', pair='ALGOBTC', depth=10, method='depth') {
-    console.log(url,pair)
-    super();
+  constructor (
+      url = 'wss://stream.binance.com:9443/ws', 
+      pair='ALGOBTC', 
+      depth=10, 
+      method='depth',
+      callback
+    ) {
 
     this.url = url;
     this.pair = pair.toLowerCase();
@@ -16,6 +19,7 @@ class BinanceWS extends EventEmitter {
     this.orderBook = new BinanceOrderBook( this.pair);
     this.method = method;
     this.depth = depth;
+    this.callback = callback;
   }
 
   disconnect() {
@@ -37,7 +41,6 @@ class BinanceWS extends EventEmitter {
       this.connected = true;
       readyHook();
     }
-
     this.ws.onerror = e => {
       console.log(new Date, '[BINANCE] error', e);
     }
@@ -51,9 +54,6 @@ class BinanceWS extends EventEmitter {
       console.log(new Date, '[BINANCE] ping');
     });
 
-    // initial book data coming in on the same tick as the subscription data
-    // we defer this so the subscription promise resloves before we send
-    // initial OB data.
     this.ws.onmessage = e => setImmediate(() => this.handleMessage(e));
 
     this.pingPong();
@@ -64,20 +64,20 @@ class BinanceWS extends EventEmitter {
     setInterval(() => {
       if (this.ws.readyState === WebSocket.OPEN) {
         this.ws.ping();
-        console.log("ping server");
       }
     }, 5000);
   }
   handleMessage = e => {
     this.lastMessageAt = + new Date;
     const payload = JSON.parse(e.data);
-    
     if(payload && payload.asks && payload.asks[0]) {
+      
       this.orderBook.updateBook(payload);
-      this.emit('channel:' + this.pair+'@'+this.method+this.depth+'@100ms',this.orderBook.getOrderbook());
+      this.callback(this.orderBook.getOrderbook());
+      
     } else {
 
-      if( payload["result"] !== undefined  && payload.id == 1) {
+      if( payload['result'] !== undefined  && payload.id == 1) {
         
         if(this.pairs[this.pair]) {
           this.pairs[this.pair].onReady(payload.id);
@@ -87,12 +87,11 @@ class BinanceWS extends EventEmitter {
         }
         return;
       }
-      this.emit('message', payload);
+      this.callback(payload);
     }
   }
 
   subscribe(pair, method, id, params) {
-    console.log('subscribe',pair, method, params, id);
     if(this.pairs[pair] && this.pairs[pair].method === method && this.pairs[pair].id === id) {
       console.log(new Date, '[BINANCE] refusing to subscribe to subscription twice', {pair, method});
       return;
@@ -119,20 +118,11 @@ class BinanceWS extends EventEmitter {
   _subscribe(method, id, params = []) {
     
     let subscribe = {
-      "method": method,
-      "params": params,
-      "id": id
+      'method': method,
+      'params': params,
+      'id': id
     }
-    console.log('_subscribe', subscribe);
     this.ws.send(JSON.stringify(subscribe));
-    /* {
-        "method": "SUBSCRIBE",
-        "params":
-        [
-        "algobtc@depth"
-        ],
-        "id": 1
-        }*/
   }
 
 }

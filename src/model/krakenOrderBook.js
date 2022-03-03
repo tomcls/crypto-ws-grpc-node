@@ -6,7 +6,6 @@ class KrakenOrderBook extends OrderBook {
     super(book);
   }
   processOrderBook(payload) {
-    //console.log('processOrderBook', payload)
     if(Array.isArray(payload)) {
         if(Array.isArray(payload[1]['as']) ) {
             this.updateBook("asks", payload[1]['as']);
@@ -22,12 +21,10 @@ class KrakenOrderBook extends OrderBook {
     
     for(let i=0; i < data.length; i++) {
         let price_level = data[i][0];
-       // console.log('price_level',price_level,data[i][1],data)
         if( parseFloat(data[i][1]) != 0.0) {
             this.getOrderbook()[side][price_level] = parseFloat(data[i][1]);
         } else {
             if( this.getOrderbook()[price_level]) {
-             // delete this.book[price_level];
               this.deleteLastItem(price_level)
             }
         }
@@ -50,15 +47,12 @@ class KrakenOrderBook extends OrderBook {
     }
     let k = Object.keys(this.getOrderbook()["asks"])
     if(k.length > 10) {
-      //delete this.book["ask"][k[k.length-1]];
       this.deleteLastItem("asks",k)
     }
     k = Object.keys(this.getOrderbook()["bids"])
     if(k.length > 10) {
-      //delete this.book["bid"][k[k.length-1]];
       this.deleteLastItem("bids",k)
     }
-  //  console.log("book",this.book)
   }
 }
 export default KrakenOrderBook;

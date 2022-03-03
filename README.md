@@ -1,4 +1,4 @@
-# crypto-ws-grpc-node
+# Node Websocket and GRPC app that read orderbook from Binance and Kraken
 Node client server app wich merge best bids and best asks from 2 orderbooks exchanges
 
 1. Connects to two exchanges' websocket feeds at the same time,
